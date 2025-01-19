@@ -15,7 +15,7 @@ public class MainLayout extends AppLayout {
 
     public MainLayout() {
         // Header
-        H1 title = new H1("Application Title");
+        H1 title = new H1("PPD Planner");
         Button logoutButton = new Button("Logout", VaadinIcon.SIGN_OUT.create());
         logoutButton.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate("login")));
 
@@ -36,7 +36,7 @@ public class MainLayout extends AppLayout {
         VerticalLayout sidebar = new VerticalLayout(homeLink, coinsLink, portfolioLink);
         sidebar.setPadding(true);
         sidebar.setSpacing(true);
-        sidebar.setWidth("200px");
+        sidebar.setWidth("100%");
         sidebar.setHeightFull();
         sidebar.getStyle().set("background-color", "#e0e0e0");
 

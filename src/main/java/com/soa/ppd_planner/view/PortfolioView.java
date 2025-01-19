@@ -1,64 +1,137 @@
 package com.soa.ppd_planner.view;
 
-import com.vaadin.flow.component.Text;
+import com.soa.ppd_planner.layout.MainLayout;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.editor.Editor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.RouterLink;
 import jakarta.annotation.security.PermitAll;
 
-@Route("portfolio")
+import java.util.ArrayList;
+import java.util.List;
+
+@Route(value = "portfolio", layout = MainLayout.class)
 @PermitAll
-public class PortfolioView extends Div {
+public class PortfolioView extends VerticalLayout {
 
-    public PortfolioView () {
-        // build layout
-        // Layout principale
-        HorizontalLayout header = createHeader();
-        VerticalLayout sidebar = createSidebar();
-        VerticalLayout mainContent = createMainContent();
+    private final List<Asset> assets = new ArrayList<>();
+    private final Grid<Asset> grid = new Grid<>(Asset.class);
+    private Div chartContainer;
 
-        // Layout globale
-        HorizontalLayout layout = new HorizontalLayout(sidebar, mainContent);
-        layout.setSizeFull();
-        layout.setFlexGrow(1, mainContent);
-        layout.expand(mainContent);
+    public PortfolioView() {
+        // Popola la tabella con alcuni dati di esempio
+        assets.add(new Asset("Stocks", 50));
+        assets.add(new Asset("Bonds", 20));
+        assets.add(new Asset("Real Estate", 15));
+        assets.add(new Asset("Commodities", 10));
+        assets.add(new Asset("Cash", 5));
 
-        add(header, layout);
+        // Configura la griglia
+        configureGrid();
+
+        // Aggiungi la griglia
+        add(new H1("Portfolio Allocation Table"));
+        add(grid);
+
+        // Crea il contenitore del grafico
+        chartContainer = new Div();
+        chartContainer.setId("chart-container");
+        chartContainer.getElement().setProperty("innerHTML",
+                "<canvas id='chart' width='600' height='400'></canvas>");
+        add(chartContainer);
+
+        // Inizializza il grafico
+        updateChart();
+
+        // Aggiungi un pulsante per il salvataggio (opzionale)
+        Button saveButton = new Button("Save Changes", e -> updateChart());
+        add(saveButton);
     }
 
-    private HorizontalLayout createHeader() {
-        H1 title = new H1("PPD Planner");
-        HorizontalLayout header = new HorizontalLayout(title);
-        header.setWidthFull();
-        header.setPadding(true);
-        header.setAlignItems(FlexComponent.Alignment.CENTER);
-        header.getStyle().set("background-color", "#f3f3f3");
-        return header;
+    private void configureGrid() {
+        // Configura le colonne della griglia
+        grid.setItems(assets);
+        grid.addColumn(Asset::getName).setHeader("Asset Class").setSortable(true);
+        Grid.Column<Asset> valueColumn = grid.addColumn(Asset::getValue).setHeader("Value");
+
+        // Aggiungi l'editor per modificare i valori
+        Editor<Asset> editor = grid.getEditor();
+        Binder<Asset> binder = new Binder<>(Asset.class);
+        editor.setBinder(binder);
+
+        TextField valueField = new TextField();
+        binder.forField(valueField).bind("value");
+        valueColumn.setEditorComponent(valueField);
+
+        grid.addItemDoubleClickListener(event -> editor.editItem(event.getItem()));
+        grid.getElement().addEventListener("keyup", e -> editor.save())
+                .setFilter("event.key === 'Enter'");
     }
 
-    private VerticalLayout createSidebar() {
-        RouterLink homeLink = new RouterLink("Home", MainView.class);
-        RouterLink otherLink = new RouterLink("Portfolio", PortfolioView.class);
+    private void updateChart() {
+        // Genera i dati aggiornati per il grafico
+        String labels = "[";
+        String data = "[";
 
-        VerticalLayout sidebar = new VerticalLayout(homeLink, otherLink);
-        sidebar.setWidth("200px");
-        sidebar.setHeightFull();
-        sidebar.setPadding(true);
-        sidebar.getStyle().set("background-color", "#e0e0e0");
-        return sidebar;
+        for (Asset asset : assets) {
+            labels += "'" + asset.getName() + "',";
+            data += asset.getValue() + ",";
+        }
+
+        labels = labels.substring(0, labels.length() - 1) + "]";
+        data = data.substring(0, data.length() - 1) + "]";
+
+        // Aggiorna il grafico
+        chartContainer.getElement().executeJs(
+                "const script = document.createElement('script');" +
+                        "script.src = 'https://cdn.jsdelivr.net/npm/chart.js';" +
+                        "script.onload = () => {" +
+                        "const ctx = document.getElementById('chart').getContext('2d');" +
+                        "if (window.myChart) { window.myChart.destroy(); }" + // Distruggi il grafico precedente
+                        "window.myChart = new Chart(ctx, {" +
+                        "    type: 'pie'," +
+                        "    data: {" +
+                        "        labels: " + labels + "," +
+                        "        datasets: [{" +
+                        "            data: " + data + "," +
+                        "            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF']" +
+                        "        }]" +
+                        "    }" +
+                        "});" +
+                        "};" +
+                        "document.head.appendChild(script);"
+        );
     }
 
-    private VerticalLayout createMainContent() {
-        // Imposta i componenti della vista principale
-        Text text = new Text("Hello @Route");
-        VerticalLayout mainContent = new VerticalLayout(text);
-        mainContent.setSizeFull();
-        mainContent.setPadding(true);
-        return mainContent;
-    }
+    // Classe interna per rappresentare un asset
+    public static class Asset {
+        private String name;
+        private double value;
 
+        public Asset(String name, double value) {
+            this.name = name;
+            this.value = value;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public double getValue() {
+            return value;
+        }
+
+        public void setValue(double value) {
+            this.value = value;
+        }
+    }
 }

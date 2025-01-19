@@ -18,11 +18,11 @@ public class PpdPlannerApplication {
 	public CommandLineRunner loadData(CoinRepository coinRepository) throws Exception {
 		return (args) -> {
 			// save a couple of customers
-			coinRepository.save(new Coin(0.20, "Italia", 2012));
+			/**coinRepository.save(new Coin(0.20, "Italia", 2012));
 			coinRepository.save(new Coin(1, "Italia", 2012));
 			coinRepository.save(new Coin(2, "Italia", 2014));
 			coinRepository.save(new Coin(0.01, "Belgio", 2012));
-			coinRepository.save(new Coin(0.10, "Eire", 2019));
+			coinRepository.save(new Coin(0.10, "Eire", 2019));*/
 		};
 	}
 }
